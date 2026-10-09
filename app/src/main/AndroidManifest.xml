@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.winlator" />
+        <package android:name="com.winlator.cmod" />
+    </queries>
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="true"
