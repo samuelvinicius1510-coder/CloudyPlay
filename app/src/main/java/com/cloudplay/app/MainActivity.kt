@@ -59,6 +59,7 @@ fun CloudPlayApp() {
     var selectedGame by remember { mutableStateOf<Game?>(null) }
     var showAdmin by remember { mutableStateOf(false) }
     var showLibrary by remember { mutableStateOf(false) }
+    var showStores by remember { mutableStateOf(false) }
     val genres = listOf("Todos", "Ação", "Aventura", "Corrida", "RPG", "Esportes")
     val filtered = demoGames.filter {
         (selectedGenre == "Todos" || it.genre == selectedGenre) &&
@@ -73,6 +74,7 @@ fun CloudPlayApp() {
             when {
                 showAdmin -> AdminPanel(onBack = { showAdmin = false })
                 showLibrary -> LocalGameLibrary(onBack = { showLibrary = false })
+                showStores -> StoreIntegrationsScreen(onBack = { showStores = false })
                 selectedGame != null -> SessionScreen(game = selectedGame!!, onBack = { selectedGame = null })
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -88,6 +90,9 @@ fun CloudPlayApp() {
                                 Text("Jogue pela nuvem", color = Muted, fontSize = 13.sp)
                             }
                             Spacer(Modifier.weight(1f))
+                            TextButton(onClick = { showStores = true }) {
+                                Text("Lojas", color = Green, fontWeight = FontWeight.Bold)
+                            }
                             TextButton(onClick = { showLibrary = true }) {
                                 Text("Biblioteca", color = Green, fontWeight = FontWeight.Bold)
                             }
