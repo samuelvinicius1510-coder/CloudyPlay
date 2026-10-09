@@ -9,6 +9,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.io.OutputStreamWriter
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,6 +58,7 @@ fun CloudPlayApp() {
     var selectedGenre by remember { mutableStateOf("Todos") }
     var selectedGame by remember { mutableStateOf<Game?>(null) }
     var showAdmin by remember { mutableStateOf(false) }
+    var showLibrary by remember { mutableStateOf(false) }
     val genres = listOf("Todos", "Ação", "Aventura", "Corrida", "RPG", "Esportes")
     val filtered = demoGames.filter {
         (selectedGenre == "Todos" || it.genre == selectedGenre) &&
@@ -70,6 +72,7 @@ fun CloudPlayApp() {
         Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
             when {
                 showAdmin -> AdminPanel(onBack = { showAdmin = false })
+                showLibrary -> LocalGameLibrary(onBack = { showLibrary = false })
                 selectedGame != null -> SessionScreen(game = selectedGame!!, onBack = { selectedGame = null })
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -85,6 +88,9 @@ fun CloudPlayApp() {
                                 Text("Jogue pela nuvem", color = Muted, fontSize = 13.sp)
                             }
                             Spacer(Modifier.weight(1f))
+                            TextButton(onClick = { showLibrary = true }) {
+                                Text("Biblioteca", color = Green, fontWeight = FontWeight.Bold)
+                            }
                             TextButton(onClick = { showAdmin = true }) {
                                 Text("Admin", color = Green, fontWeight = FontWeight.Bold)
                             }
@@ -102,8 +108,8 @@ fun CloudPlayApp() {
                             Spacer(Modifier.height(8.dp))
                             Text("Escolha um título e veja os detalhes da sessão.", color = Muted)
                             Spacer(Modifier.height(14.dp))
-                            Button(onClick = { selectedGame = demoGames.first() }) {
-                                Text("Explorar sessão  →", color = Bg, fontWeight = FontWeight.Bold)
+                            Button(onClick = { showLibrary = true }) {
+                                Text("Abrir minha biblioteca  →", color = Bg, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
