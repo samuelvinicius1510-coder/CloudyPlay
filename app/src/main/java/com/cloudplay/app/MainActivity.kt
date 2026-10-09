@@ -1,6 +1,11 @@
 package com.cloudplay.app
 
 import android.os.Bundle
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.io.OutputStreamWriter
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -139,8 +144,83 @@ fun CloudPlayApp() {
 
 @Composable
 fun AdminPanel(onBack: () -> Unit) {
-    var token by remember { mutableStateOf("") }
-    var attempted by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var authorized by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("") }
+
+    // Publishable/anon key is intended for client apps. Never put a service_role/secret key here.
+    val projectUrl = "https://yslociopvotmlvgimaww.supabase.co"
+    val publishableKey = "sb_publishable_zIgd9ClzlOiqoKhdbiFMPA_mVxZM91-"
+
+    fun signInAndCheckOwner() {
+        if (email.isBlank() || password.isBlank() || busy) return
+        busy = true
+        status = "Verificando sua conta..."
+        Thread {
+            var resultMessage = "Não foi possível verificar a conta."
+            var isOwner = false
+            try {
+                val authConnection = (URL("$projectUrl/auth/v1/token?grant_type=password").openConnection() as HttpURLConnection)
+                authConnection.requestMethod = "POST"
+                authConnection.connectTimeout = 15000
+                authConnection.readTimeout = 15000
+                authConnection.setRequestProperty("Content-Type", "application/json")
+                authConnection.setRequestProperty("apikey", publishableKey)
+                authConnection.doOutput = true
+                val payload = JSONObject().put("email", email.trim()).put("password", password).toString()
+                OutputStreamWriter(authConnection.outputStream, Charsets.UTF_8).use { it.write(payload) }
+                val authCode = authConnection.responseCode
+                val authStream = if (authCode in 200..299) authConnection.inputStream else authConnection.errorStream
+                val authBody = authStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                authConnection.disconnect()
+
+                if (authCode !in 200..299) {
+                    resultMessage = try {
+                        JSONObject(authBody).optString("msg",
+                            JSONObject(authBody).optString("message", "E-mail ou senha inválidos."))
+                    } catch (_: Exception) { "E-mail ou senha inválidos." }
+                } else {
+                    val authJson = JSONObject(authBody)
+                    val accessToken = authJson.optString("access_token")
+                    val userId = authJson.optJSONObject("user")?.optString("id").orEmpty()
+                    if (accessToken.isBlank() || userId.isBlank()) {
+                        resultMessage = "A resposta de autenticação veio incompleta."
+                    } else {
+                        val profileUrl = "$projectUrl/rest/v1/admin_profiles?user_id=eq.$userId&select=role"
+                        val profileConnection = (URL(profileUrl).openConnection() as HttpURLConnection)
+                        profileConnection.requestMethod = "GET"
+                        profileConnection.connectTimeout = 15000
+                        profileConnection.readTimeout = 15000
+                        profileConnection.setRequestProperty("apikey", publishableKey)
+                        profileConnection.setRequestProperty("Authorization", "Bearer $accessToken")
+                        val profileCode = profileConnection.responseCode
+                        val profileStream = if (profileCode in 200..299) profileConnection.inputStream else profileConnection.errorStream
+                        val profileBody = profileStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                        profileConnection.disconnect()
+                        if (profileCode in 200..299) {
+                            val profiles = JSONArray(profileBody)
+                            val role = if (profiles.length() > 0) profiles.getJSONObject(0).optString("role") else ""
+                            isOwner = role == "owner"
+                            resultMessage = if (isOwner) "Acesso de proprietária confirmado." else "Sua conta não tem permissão de proprietária."
+                        } else {
+                            resultMessage = "Não foi possível consultar sua permissão. Confira a tabela admin_profiles e as políticas RLS no Supabase."
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                resultMessage = "Falha de conexão. Confira sua internet e as configurações do Supabase."
+            }
+            runOnUiThread {
+                busy = false
+                authorized = isOwner
+                status = resultMessage
+                if (!isOwner) password = ""
+            }
+        }.start()
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -148,41 +228,49 @@ fun AdminPanel(onBack: () -> Unit) {
         Text("‹  Voltar ao CloudyPlay", color = Green, modifier = Modifier.clickable(onClick = onBack))
         Spacer(Modifier.height(8.dp))
         Text("🛡️ Painel administrativo", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Acesso de administradores autorizado por token", color = Muted)
-        Card(colors = CardDefaults.cardColors(containerColor = Panel)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Entrar como administrador", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it; attempted = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Token de autorização") },
-                    visualTransformation = PasswordVisualTransformation()
-                )
-                Button(
-                    onClick = { attempted = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = token.isNotBlank()
-                ) {
-                    Text("Validar token", color = Bg)
-                }
-                if (attempted) {
-                    Text(
-                        "Ainda não conectado: o servidor de autenticação não foi configurado. Este app não validou seu token. Não compartilhe tokens nem os coloque no código do aplicativo.",
-                        color = Color(0xFFFFC66D),
-                        fontSize = 12.sp
+        Text("Somente a conta proprietária autorizada pode entrar.", color = Muted)
+        if (!authorized) {
+            Card(colors = CardDefaults.cardColors(containerColor = Panel)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Entrar como proprietária", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; status = "" },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("E-mail da sua conta Supabase") }
                     )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it; status = "" },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Senha") },
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                    Button(
+                        onClick = { signInAndCheckOwner() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = email.isNotBlank() && password.isNotBlank() && !busy
+                    ) {
+                        Text(if (busy) "Verificando..." else "Entrar", color = Bg)
+                    }
+                    if (status.isNotBlank()) {
+                        Text(status, color = if (status.contains("confirmado")) Green else Color(0xFFFFC66D), fontSize = 12.sp)
+                    }
                 }
             }
+            Text("A autenticação é feita pelo Supabase. O aplicativo consulta seu perfil e só libera esta tela se o cargo retornado for owner.", color = Muted, fontSize = 12.sp)
+        } else {
+            Text("✅ Acesso autorizado", color = Green, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(status, color = Muted)
+            AdminFeature("👥", "Usuários", "Área de gerenciamento a implementar")
+            AdminFeature("🎮", "Catálogo de jogos", "Área de gerenciamento a implementar")
+            AdminFeature("🧾", "Registro de ações", "Área de auditoria a implementar")
+            Button(onClick = { authorized = false; email = ""; password = ""; status = "" }, modifier = Modifier.fillMaxWidth()) {
+                Text("Sair do painel", color = Bg)
+            }
         }
-        Text("O que ficará disponível após conectar a autenticação segura:", fontWeight = FontWeight.Bold)
-        AdminFeature("👥", "Usuários", "Consultar e gerenciar contas")
-        AdminFeature("🎮", "Catálogo de jogos", "Adicionar, editar e desativar jogos")
-        AdminFeature("🎟️", "Tokens de administrador", "Autorizar e revogar outros administradores")
-        AdminFeature("🧾", "Registro de ações", "Consultar alterações administrativas")
-        Spacer(Modifier.weight(1f))
-        Text("Segurança: tokens precisam ser verificados no servidor. Esta tela é apenas a interface inicial e ainda não concede acesso administrativo.", color = Muted, fontSize = 11.sp)
     }
 }
 
