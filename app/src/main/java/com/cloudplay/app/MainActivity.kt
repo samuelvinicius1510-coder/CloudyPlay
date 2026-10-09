@@ -1,6 +1,8 @@
 package com.cloudplay.app
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -212,7 +214,7 @@ fun AdminPanel(onBack: () -> Unit) {
             } catch (_: Exception) {
                 resultMessage = "Falha de conexão. Confira sua internet e as configurações do Supabase."
             }
-            runOnUiThread {
+            Handler(Looper.getMainLooper()).post {
                 busy = false
                 authorized = isOwner
                 status = resultMessage
