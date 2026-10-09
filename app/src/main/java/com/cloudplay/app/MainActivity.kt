@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -48,6 +49,7 @@ fun CloudPlayApp() {
     var search by remember { mutableStateOf("") }
     var selectedGenre by remember { mutableStateOf("Todos") }
     var selectedGame by remember { mutableStateOf<Game?>(null) }
+    var showAdmin by remember { mutableStateOf(false) }
     val genres = listOf("Todos", "Ação", "Aventura", "Corrida", "RPG", "Esportes")
     val filtered = demoGames.filter {
         (selectedGenre == "Todos" || it.genre == selectedGenre) &&
@@ -59,8 +61,10 @@ fun CloudPlayApp() {
         onBackground = Color.White, onSurface = Color.White
     )) {
         Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
-            if (selectedGame == null) {
-                LazyColumn(
+            when {
+                showAdmin -> AdminPanel(onBack = { showAdmin = false })
+                selectedGame != null -> SessionScreen(game = selectedGame!!, onBack = { selectedGame = null })
+                else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(18.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -74,8 +78,9 @@ fun CloudPlayApp() {
                                 Text("Jogue pela nuvem", color = Muted, fontSize = 13.sp)
                             }
                             Spacer(Modifier.weight(1f))
-                            Text("●", color = Green)
-                            Text(" Demo", color = Muted, fontSize = 12.sp)
+                            TextButton(onClick = { showAdmin = true }) {
+                                Text("Admin", color = Green, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                     item {
@@ -123,13 +128,75 @@ fun CloudPlayApp() {
                         GameCard(game = game, onClick = { selectedGame = game })
                     }
                     item {
-                        Text("CloudyPlay v0.1 • A transmissão real será integrada numa próxima etapa.",
+                        Text("CloudyPlay v0.2 • A transmissão real será integrada numa próxima etapa.",
                             color = Muted, fontSize = 11.sp, modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
-            } else {
-                SessionScreen(game = selectedGame!!, onBack = { selectedGame = null })
             }
+        }
+    }
+}
+
+@Composable
+fun AdminPanel(onBack: () -> Unit) {
+    var token by remember { mutableStateOf("") }
+    var attempted by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Text("‹  Voltar ao CloudyPlay", color = Green, modifier = Modifier.clickable(onClick = onBack))
+        Spacer(Modifier.height(8.dp))
+        Text("🛡️ Painel administrativo", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Acesso de administradores autorizado por token", color = Muted)
+        Card(colors = CardDefaults.cardColors(containerColor = Panel)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Entrar como administrador", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it; attempted = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Token de autorização") },
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                Button(
+                    onClick = { attempted = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = token.isNotBlank()
+                ) {
+                    Text("Validar token", color = Bg)
+                }
+                if (attempted) {
+                    Text(
+                        "Ainda não conectado: o servidor de autenticação não foi configurado. Este app não validou seu token. Não compartilhe tokens nem os coloque no código do aplicativo.",
+                        color = Color(0xFFFFC66D),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+        Text("O que ficará disponível após conectar a autenticação segura:", fontWeight = FontWeight.Bold)
+        AdminFeature("👥", "Usuários", "Consultar e gerenciar contas")
+        AdminFeature("🎮", "Catálogo de jogos", "Adicionar, editar e desativar jogos")
+        AdminFeature("🎟️", "Tokens de administrador", "Autorizar e revogar outros administradores")
+        AdminFeature("🧾", "Registro de ações", "Consultar alterações administrativas")
+        Spacer(Modifier.weight(1f))
+        Text("Segurança: tokens precisam ser verificados no servidor. Esta tela é apenas a interface inicial e ainda não concede acesso administrativo.", color = Muted, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun AdminFeature(icon: String, title: String, description: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(icon, fontSize = 25.sp)
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(description, color = Muted, fontSize = 12.sp)
         }
     }
 }
