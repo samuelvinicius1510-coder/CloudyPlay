@@ -87,6 +87,7 @@ fun CloudPlayApp() {
                     val homeListState = rememberLazyListState()
                     val homeScope = rememberCoroutineScope()
                     BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val viewportHeight = maxHeight
                         LazyColumn(
                             state = homeListState,
                             modifier = Modifier.fillMaxSize(),
@@ -196,7 +197,7 @@ fun CloudPlayApp() {
                                     .width(8.dp)
                                     .height(thumbHeight)
                                     .background(Green, RoundedCornerShape(8.dp))
-                                    .pointerInput(totalCount, maxHeight) {
+                                    .pointerInput(totalCount, viewportHeight) {
                                         detectDragGestures { change, dragAmount ->
                                             change.consume()
                                             val trackPx = size.height.toFloat()
