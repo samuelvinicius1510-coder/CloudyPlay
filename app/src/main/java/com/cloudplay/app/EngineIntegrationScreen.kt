@@ -32,6 +32,7 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
             runCatching { context.packageManager.getPackageInfo(packageName, 0) }.isSuccess
         }
     }
+    var workspaceMessage by remember { mutableStateOf("Área privada do runtime ainda não preparada.") }
     var message by remember {
         mutableStateOf(
             if (installedPackage != null) "Motor externo detectado: $installedPackage"
@@ -102,6 +103,16 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(bridgeInspection.detail, color = EngineMuted, fontSize = 12.sp)
+                Button(
+                    onClick = {
+                        val result = RuntimeBridge.prepareWorkspace(context)
+                        workspaceMessage = result.detail
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Preparar pastas privadas do runtime")
+                }
+                Text(workspaceMessage, color = EngineMuted, fontSize = 12.sp)
                 Text(
                     "Esta verificação é diagnóstica; não inicia o motor nem indica que jogos Windows já funcionam.",
                     color = EngineMuted,
