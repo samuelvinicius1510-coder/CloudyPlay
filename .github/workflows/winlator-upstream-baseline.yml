@@ -1,0 +1,76 @@
+name: Winlator upstream reference build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['integration/winlator-runtime']
+    paths:
+      - '.github/workflows/winlator-upstream-baseline.yml'
+      - 'docs/WINLATOR_MODULE_COMPATIBILITY_AUDIT.md'
+      - '.gitmodules'
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout official Winlator repository with all submodules
+        uses: actions/checkout@v4
+        with:
+          repository: brunodev85/winlator
+          ref: main
+          submodules: recursive
+          path: winlator-upstream
+
+      - name: Report source and submodule revisions
+        shell: bash
+        run: |
+          cd winlator-upstream
+          echo "Winlator root revision:"
+          git rev-parse HEAD
+          echo "Recursive submodule status:"
+          git submodule status --recursive
+          echo "Gradle entry points:"
+          find . -maxdepth 3 \( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \) -print
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK and NDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;24.0.8215888" "cmake;3.22.1"
+
+      - name: Build original Winlator debug APK as a baseline
+        shell: bash
+        run: |
+          cd winlator-upstream
+          if [ -x ./gradlew ]; then
+            ./gradlew --no-daemon assembleDebug
+          elif [ -x ./app/gradlew ]; then
+            cd app
+            ./gradlew --no-daemon assembleDebug
+          else
+            echo "::error::No Gradle wrapper found in the upstream checkout."
+            exit 1
+          fi
+
+      - name: Upload upstream baseline APK (reference only)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Winlator-upstream-reference-debug
+          path: |
+            winlator-upstream/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
