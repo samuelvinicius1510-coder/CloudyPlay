@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cloudplay.runtimebridge.RuntimeBridge
+import com.cloudplay.runtimebridge.RuntimePayloadAudit
 
 private val EnginePanel = Color(0xFF111D29)
 private val EngineGreen = Color(0xFF21E887)
@@ -24,6 +25,7 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
     val runtimeStatus = remember { WindowsRuntime.inspect(context) }
     val diagnostics = remember { RuntimeDiagnostics.inspect(context) }
     val bridgeInspection = remember { RuntimeBridge.inspect(context) }
+    val payloadAudit = remember { RuntimePayloadAudit.inspect(context) }
     val candidatePackages = listOf("com.winlator", "com.winlator.cmod")
     val installedPackage = remember {
         candidatePackages.firstOrNull { packageName ->
@@ -67,6 +69,23 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                     color = EngineMuted,
                     fontSize = 12.sp
                 )
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Auditoria dos arquivos do motor", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (payloadAudit.readyForBootstrap) "Pré-requisitos de arquivos encontrados"
+                    else "Payload incompleto: ${payloadAudit.missingAssets.size} assets e ${payloadAudit.missingNativeLibraries.size} bibliotecas ausentes",
+                    color = EngineGreen,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("Assets encontrados: ${payloadAudit.packagedAssets.size} de 4", color = EngineMuted, fontSize = 12.sp)
+                payloadAudit.missingAssets.forEach { asset -> Text("• Falta asset: $asset", color = EngineMuted, fontSize = 11.sp) }
+                Text("Bibliotecas encontradas: ${payloadAudit.nativeLibraries.joinToString().ifBlank { "nenhuma" }}", color = EngineMuted, fontSize = 12.sp)
+                payloadAudit.missingNativeLibraries.forEach { library -> Text("• Falta biblioteca: $library", color = EngineMuted, fontSize = 11.sp) }
+                Text("A auditoria não instala nem executa arquivos; serve para impedir que um pacote parcial seja tratado como pronto.", color = EngineMuted, fontSize = 12.sp)
             }
         }
 
