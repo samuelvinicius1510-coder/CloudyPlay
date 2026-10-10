@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "CloudyPlay"
-include(":app")
+include(":app", ":runtime-bridge")
