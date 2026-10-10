@@ -77,14 +77,14 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                 Text("Auditoria dos arquivos do motor", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Text(
                     if (payloadAudit.readyForBootstrap) "Pré-requisitos de arquivos encontrados"
-                    else "Payload incompleto: ${payloadAudit.missingAssets.size} assets e ${payloadAudit.missingNativeLibraries.size} bibliotecas ausentes",
+                    else "Payload incompleto: ${payloadAudit.missingAssets.size} assets necessários ausentes",
                     color = EngineGreen,
                     fontWeight = FontWeight.Bold
                 )
-                Text("Assets encontrados: ${payloadAudit.packagedAssets.size} de 4", color = EngineMuted, fontSize = 12.sp)
+                Text("Assets-base encontrados: ${payloadAudit.packagedAssets.size} de 5", color = EngineMuted, fontSize = 12.sp)
                 payloadAudit.missingAssets.forEach { asset -> Text("• Falta asset: $asset", color = EngineMuted, fontSize = 11.sp) }
-                Text("Bibliotecas encontradas: ${payloadAudit.nativeLibraries.joinToString().ifBlank { "nenhuma" }}", color = EngineMuted, fontSize = 12.sp)
-                payloadAudit.missingNativeLibraries.forEach { library -> Text("• Falta biblioteca: $library", color = EngineMuted, fontSize = 11.sp) }
+                Text("Bibliotecas nativas empacotadas: ${payloadAudit.packagedNativeLibraries.size}", color = EngineMuted, fontSize = 12.sp)
+                Text(payloadAudit.packagedNativeLibraries.joinToString().ifBlank { "Nenhuma biblioteca .so encontrada" }, color = EngineMuted, fontSize = 11.sp)
                 Text("A auditoria não instala nem executa arquivos; serve para impedir que um pacote parcial seja tratado como pronto.", color = EngineMuted, fontSize = 12.sp)
             }
         }
