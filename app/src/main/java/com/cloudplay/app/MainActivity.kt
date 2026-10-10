@@ -167,6 +167,8 @@ fun AdminPanel(onBack: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var authorized by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
+    var sessionToken by remember { mutableStateOf("") }
+    var adminUserId by remember { mutableStateOf("") }
 
     // Publishable/anon key is intended for client apps. Never put a service_role/secret key here.
     val projectUrl = "https://yslociopvotmlvgimaww.supabase.co"
@@ -179,6 +181,8 @@ fun AdminPanel(onBack: () -> Unit) {
         Thread {
             var resultMessage = "Não foi possível verificar a conta."
             var isOwner = false
+            var authenticatedToken = ""
+            var authenticatedUserId = ""
             try {
                 val authConnection = (URL("$projectUrl/auth/v1/token?grant_type=password").openConnection() as HttpURLConnection)
                 authConnection.requestMethod = "POST"
@@ -203,6 +207,8 @@ fun AdminPanel(onBack: () -> Unit) {
                     val authJson = JSONObject(authBody)
                     val accessToken = authJson.optString("access_token")
                     val userId = authJson.optJSONObject("user")?.optString("id").orEmpty()
+                    authenticatedToken = accessToken
+                    authenticatedUserId = userId
                     if (accessToken.isBlank() || userId.isBlank()) {
                         resultMessage = "A resposta de autenticação veio incompleta."
                     } else {
@@ -234,7 +240,14 @@ fun AdminPanel(onBack: () -> Unit) {
                 busy = false
                 authorized = isOwner
                 status = resultMessage
-                if (!isOwner) password = ""
+                if (isOwner) {
+                    sessionToken = authenticatedToken
+                    adminUserId = authenticatedUserId
+                } else {
+                    password = ""
+                    sessionToken = ""
+                    adminUserId = ""
+                }
             }
         }.start()
     }
@@ -280,14 +293,19 @@ fun AdminPanel(onBack: () -> Unit) {
             }
             Text("A autenticação é feita pelo Supabase. O aplicativo consulta seu perfil e só libera esta tela se o cargo retornado for owner.", color = Muted, fontSize = 12.sp)
         } else {
-            Text("✅ Acesso autorizado", color = Green, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(status, color = Muted)
-            AdminFeature("👥", "Usuários", "Área de gerenciamento a implementar")
-            AdminFeature("🎮", "Catálogo de jogos", "Área de gerenciamento a implementar")
-            AdminFeature("🧾", "Registro de ações", "Área de auditoria a implementar")
-            Button(onClick = { authorized = false; email = ""; password = ""; status = "" }, modifier = Modifier.fillMaxWidth()) {
-                Text("Sair do painel", color = Bg)
-            }
+            AdminDashboard(
+                accessToken = sessionToken,
+                userId = adminUserId,
+                onBack = onBack,
+                onSignOut = {
+                    authorized = false
+                    email = ""
+                    password = ""
+                    status = ""
+                    sessionToken = ""
+                    adminUserId = ""
+                }
+            )
         }
     }
 }
