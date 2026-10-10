@@ -21,6 +21,7 @@ private val EngineMuted = Color(0xFFAAB6C5)
 fun EngineIntegrationScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val runtimeStatus = remember { WindowsRuntime.inspect(context) }
+    val diagnostics = remember { RuntimeDiagnostics.inspect(context) }
     val candidatePackages = listOf("com.winlator", "com.winlator.cmod")
     val installedPackage = remember {
         candidatePackages.firstOrNull { packageName ->
@@ -64,6 +65,16 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                     color = EngineMuted,
                     fontSize = 12.sp
                 )
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Diagnóstico deste aparelho", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("ABI: ${diagnostics.abi} • RAM: ${diagnostics.ramGb} GB • Espaço livre: ${diagnostics.freeStorageGb} GB", color = EngineMuted, fontSize = 12.sp)
+                Text("Vulkan informado pelo Android: ${if (diagnostics.vulkan) "sim" else "não"}", color = EngineMuted, fontSize = 12.sp)
+                Text("Identificação do hardware: ${diagnostics.gpuHint}", color = EngineMuted, fontSize = 11.sp)
+                diagnostics.notes.forEach { note -> Text("• $note", color = EngineMuted, fontSize = 12.sp) }
             }
         }
 
