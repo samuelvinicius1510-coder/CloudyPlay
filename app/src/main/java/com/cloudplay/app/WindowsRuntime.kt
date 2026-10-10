@@ -4,17 +4,17 @@ import android.content.Context
 import java.io.File
 
 /**
- * Boundary for the future embedded Windows runtime.
+ * Honest status boundary for the future embedded Windows runtime.
  *
- * This class deliberately reports NOT_AVAILABLE until the native runtime and
- * its licensed root filesystem are packaged and initialized. It must never
- * report success merely because an executable was imported.
+ * Detecting files is not the same as initializing Wine/Box64. This app does
+ * not yet ship or initialize an embedded runtime, so this inspector never
+ * reports READY or RUNNING.
  */
 object WindowsRuntime {
     enum class State {
         NOT_AVAILABLE,
         ASSETS_MISSING,
-        READY
+        FILES_DETECTED_NOT_INITIALIZED
     }
 
     data class Status(
@@ -33,12 +33,12 @@ object WindowsRuntime {
 
         return when {
             hasArm64Runtime && hasRootFs -> Status(
-                State.READY,
-                "Arquivos do runtime detectados. A inicialização real ainda precisa ser validada."
+                State.FILES_DETECTED_NOT_INITIALIZED,
+                "Arquivos encontrados, mas o motor ainda não foi inicializado nem testado. A execução não está disponível."
             )
             !hasArm64Runtime && !hasRootFs -> Status(
                 State.NOT_AVAILABLE,
-                "O CloudyPlay ainda não inclui binários nativos Wine/Box64 nem root filesystem."
+                "O CloudyPlay ainda não inclui os binários nativos Wine/Box64 nem o root filesystem necessários."
             )
             else -> Status(
                 State.ASSETS_MISSING,
