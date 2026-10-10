@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cloudplay.runtimebridge.RuntimeBridge
 
 private val EnginePanel = Color(0xFF111D29)
 private val EngineGreen = Color(0xFF21E887)
@@ -22,6 +23,7 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val runtimeStatus = remember { WindowsRuntime.inspect(context) }
     val diagnostics = remember { RuntimeDiagnostics.inspect(context) }
+    val bridgeInspection = remember { RuntimeBridge.inspect(context) }
     val candidatePackages = listOf("com.winlator", "com.winlator.cmod")
     val installedPackage = remember {
         candidatePackages.firstOrNull { packageName ->
@@ -62,6 +64,27 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                 Text(runtimeStatus.detail, color = EngineMuted, fontSize = 12.sp)
                 Text(
                     "Detectar arquivos não prova que o motor funciona. O CloudyPlay ainda não executa programas Windows localmente.",
+                    color = EngineMuted,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Verificação do runtime integrado", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    when (bridgeInspection.state) {
+                        RuntimeBridge.State.MISSING_NATIVE_COMPONENTS -> "Bloqueio: bibliotecas Wine/Box64 ausentes"
+                        RuntimeBridge.State.MISSING_ROOTFS -> "Bloqueio: root filesystem ausente"
+                        RuntimeBridge.State.NOT_INITIALIZED -> "Bloqueio: inicialização nativa pendente"
+                    },
+                    color = EngineGreen,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(bridgeInspection.detail, color = EngineMuted, fontSize = 12.sp)
+                Text(
+                    "Esta verificação é diagnóstica; não inicia o motor nem indica que jogos Windows já funcionam.",
                     color = EngineMuted,
                     fontSize = 12.sp
                 )
