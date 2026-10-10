@@ -2,21 +2,20 @@ package com.cloudplay.runtimebridge
 
 import android.content.Context
 import android.os.StatFs
-import java.io.File
 
 /**
- * Storage/asset preflight before a future RootFS installer runs.
+ * Checks prerequisites for a future RootFS installation.
  *
- * This does not extract archives. The upstream installer relies on a Zstandard
- * tar extractor and patch/version semantics; those must be integrated before
- * any archive is unpacked or the runtime can be marked ready.
+ * Passing this check does NOT mean the runtime can be installed or launched:
+ * archive extraction, patch/version handling, and native initialization are
+ * deliberately not implemented here.
  */
 object RuntimeInstallPreflight {
-    // Keep a safety margin for temporary extraction files, patches and prefix data.
+    // Safety margin for temporary extraction files, patches and prefix data.
     private const val MINIMUM_FREE_BYTES = 2L * 1024L * 1024L * 1024L
 
     data class Result(
-        val readyToInstall: Boolean,
+        val preflightPassed: Boolean,
         val missingAssets: List<String>,
         val availableBytes: Long,
         val requiredBytes: Long,
@@ -39,15 +38,16 @@ object RuntimeInstallPreflight {
         }
 
         val missing = requiredAssets.filter { path ->
-            runCatching { context.assets.open(path).use { it.read() >= 0 } }
-                .getOrDefault(false).not()
+            runCatching {
+                context.assets.open(path).use { stream -> stream.read() >= 0 }
+            }.getOrDefault(false).not()
         }
         val available = runCatching {
             StatFs(directory.absolutePath).availableBytes
         }.getOrDefault(0L)
 
         val enoughSpace = available >= MINIMUM_FREE_BYTES
-        val ready = missing.isEmpty() && enoughSpace
+        val passed = missing.isEmpty() && enoughSpace
         val detail = when {
             missing.isNotEmpty() ->
                 "Runtime assets are not packaged in this APK: ${missing.joinToString()}"
@@ -55,9 +55,9 @@ object RuntimeInstallPreflight {
                 "Insufficient private storage. Available: ${available / (1024L * 1024L)} MiB; " +
                     "required safety margin: ${MINIMUM_FREE_BYTES / (1024L * 1024L)} MiB."
             else ->
-                "Assets and storage preflight passed. Extraction and native initialization are still not implemented."
+                "Prerequisite check passed only. RootFS extraction, patch/version handling, and native initialization are not implemented."
         }
 
-        return Result(ready, missing, available, MINIMUM_FREE_BYTES, detail)
+        return Result(passed, missing, available, MINIMUM_FREE_BYTES, detail)
     }
 }
