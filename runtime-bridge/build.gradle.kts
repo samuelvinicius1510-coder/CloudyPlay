@@ -23,3 +23,9 @@ android {
         jvmTarget = "17"
     }
 }
+
+dependencies {
+    // Match Winlator's archive format: Zstandard-compressed TAR (.tzst).
+    implementation("com.github.luben:zstd-jni:1.5.2-3")
+    implementation("org.apache.commons:commons-compress:1.20")
+}
