@@ -6,6 +6,7 @@ import java.io.File
 /**
  * Audits the payload CloudyPlay actually packages.
  * This does not download, extract, or execute third-party components.
+ * Asset/library presence alone must never be treated as runtime readiness.
  */
 object RuntimePayloadAudit {
     data class Report(
@@ -13,8 +14,11 @@ object RuntimePayloadAudit {
         val missingAssets: List<String>,
         val packagedNativeLibraries: List<String>
     ) {
+        // Presence checks are not enough to declare a runtime bootable.
+        // Native JNI entry points, rootfs installation, and graphics support
+        // still need to be integrated and exercised on a physical device.
         val readyForBootstrap: Boolean
-            get() = missingAssets.isEmpty() && packagedNativeLibraries.isNotEmpty()
+            get() = false
     }
 
     // Names follow the pinned Winlator upstream asset layout.
