@@ -34,7 +34,9 @@ jobs:
           echo "Recursive submodule status:"
           git submodule status --recursive
           echo "Gradle entry points:"
-          find . -maxdepth 3 \\( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \\) -print
+          find . -maxdepth 3 -name gradlew -print
+          find . -maxdepth 3 -name settings.gradle -print
+          find . -maxdepth 3 -name settings.gradle.kts -print
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
