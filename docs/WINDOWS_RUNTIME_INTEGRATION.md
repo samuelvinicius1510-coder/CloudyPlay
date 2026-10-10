@@ -7,6 +7,8 @@ Do not copy the whole Winlator app or ship unverified native binaries as if they
 Reference project: https://github.com/brunodev85/winlator
 Upstream overview: https://github.com/winebox64/winlator
 
+The current upstream repository declares separate Git submodules for `app` (`winlator-app`), `vortek`, and `gladio`. These are source components, not Maven artifacts. The CloudyPlay workflow is prepared for recursive submodule checkout, but it does not yet import these projects or merge their Android application module. A genuine embedded integration must first choose a compatible upstream revision and reconcile application IDs, manifests, resources, Gradle plugins, native build scripts, and runtime assets.
+
 ## First integration milestone
 
 This milestone creates a clear runtime boundary inside CloudyPlay so the UI cannot claim that a file launched when no engine exists.
