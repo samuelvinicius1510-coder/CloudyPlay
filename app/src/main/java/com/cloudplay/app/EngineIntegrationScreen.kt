@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cloudplay.runtimebridge.RuntimeAssetStager
 import com.cloudplay.runtimebridge.RuntimeBridge
 import com.cloudplay.runtimebridge.RuntimePayloadAudit
 
@@ -33,6 +34,7 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
         }
     }
     var workspaceMessage by remember { mutableStateOf("Área privada do runtime ainda não preparada.") }
+    var stagingMessage by remember { mutableStateOf("Arquivos-base do runtime ainda não copiados.") }
     var message by remember {
         mutableStateOf(
             if (installedPackage != null) "Motor externo detectado: $installedPackage"
@@ -113,6 +115,21 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                     Text("Preparar pastas privadas do runtime")
                 }
                 Text(workspaceMessage, color = EngineMuted, fontSize = 12.sp)
+                Button(
+                    onClick = {
+                        val result = RuntimeAssetStager.stage(context)
+                        stagingMessage = result.detail
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Preparar arquivos-base do Winlator")
+                }
+                Text(stagingMessage, color = EngineMuted, fontSize = 12.sp)
+                Text(
+                    "A cópia só funciona se os arquivos estiverem incluídos no APK. Ela não extrai arquivos nem inicia o motor.", 
+                    color = EngineMuted,
+                    fontSize = 12.sp
+                )
                 Text(
                     "Esta verificação é diagnóstica; não inicia o motor nem indica que jogos Windows já funcionam.",
                     color = EngineMuted,
