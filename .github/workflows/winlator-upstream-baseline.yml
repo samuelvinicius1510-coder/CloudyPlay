@@ -55,6 +55,35 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;24.0.8215888" "cmake;3.22.1"
 
+      - name: Inventory native libraries and runtime assets
+        shell: bash
+        run: |
+          mkdir -p winlator-inventory
+          {
+            echo "Winlator revision: b6b2259158cf38d06067c34430d840d56b46d220"
+            echo
+            echo "=== APK / native library files ==="
+            find winlator-upstream/app -type f \\( -name '*.so' -o -name '*.aar' -o -name '*.apk' \\) -printf '%p | %s bytes\\n' | sort
+            echo
+            echo "=== Asset directory sizes ==="
+            du -ah winlator-upstream/app/src/main/assets 2>/dev/null | sort -h | tail -80 || true
+            echo
+            echo "=== Native source and JNI directories ==="
+            find winlator-upstream/app/src/main -type d \\( -name cpp -o -name jniLibs -o -name assets \\) -print
+            echo
+            echo "=== License and notice files ==="
+            find winlator-upstream -type f \\( -iname 'license*' -o -iname 'copying*' -o -iname 'notice*' \\) -not -path '*/.git/*' -print | sort
+          } > winlator-inventory/runtime-inventory.txt
+          cat winlator-inventory/runtime-inventory.txt
+
+      - name: Upload runtime inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: Winlator-runtime-inventory
+          path: winlator-inventory/runtime-inventory.txt
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Build original Winlator debug APK as a baseline
         shell: bash
         run: |
