@@ -53,14 +53,14 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                     when (runtimeStatus.state) {
                         WindowsRuntime.State.NOT_AVAILABLE -> "Estado: ainda não instalado no APK"
                         WindowsRuntime.State.ASSETS_MISSING -> "Estado: arquivos do motor incompletos"
-                        WindowsRuntime.State.READY -> "Estado: arquivos do motor detectados (ainda requer teste de inicialização)"
+                        WindowsRuntime.State.FILES_DETECTED_NOT_INITIALIZED -> "Estado: arquivos detectados, motor não inicializado"
                     },
                     color = EngineGreen,
                     fontWeight = FontWeight.Bold
                 )
                 Text(runtimeStatus.detail, color = EngineMuted, fontSize = 12.sp)
                 Text(
-                    "Este estado é verificado pelos arquivos locais. Não é considerado pronto só porque um jogo foi importado.",
+                    "Detectar arquivos não prova que o motor funciona. O CloudyPlay ainda não executa programas Windows localmente.",
                     color = EngineMuted,
                     fontSize = 12.sp
                 )
