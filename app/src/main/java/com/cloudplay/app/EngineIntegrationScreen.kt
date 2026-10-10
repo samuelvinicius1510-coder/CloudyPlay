@@ -17,13 +17,10 @@ private val EnginePanel = Color(0xFF111D29)
 private val EngineGreen = Color(0xFF21E887)
 private val EngineMuted = Color(0xFFAAB6C5)
 
-/**
- * First-stage bridge to a separately installed Windows compatibility engine.
- * This does not bundle Wine/Box64 and intentionally does not claim to launch EXEs.
- */
 @Composable
 fun EngineIntegrationScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val runtimeStatus = remember { WindowsRuntime.inspect(context) }
     val candidatePackages = listOf("com.winlator", "com.winlator.cmod")
     val installedPackage = remember {
         candidatePackages.firstOrNull { packageName ->
@@ -32,8 +29,8 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
     }
     var message by remember {
         mutableStateOf(
-            if (installedPackage != null) "Motor detectado: $installedPackage"
-            else "Nenhum pacote Winlator conhecido foi detectado neste aparelho."
+            if (installedPackage != null) "Motor externo detectado: $installedPackage"
+            else "Nenhum motor externo conhecido foi detectado."
         )
     }
 
@@ -44,18 +41,40 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
         Text("‹ Voltar", color = EngineGreen, modifier = Modifier.clickable(onClick = onBack))
         Text("Motor de execução PC", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
         Text(
-            "Primeira etapa: conectar o CloudyPlay a um motor externo de compatibilidade. Wine + Box64 não é uma dependência Android simples; precisa de bibliotecas nativas e uma camada gráfica compatível.",
+            "O objetivo é executar jogos localmente no Android, sem PC ou streaming. O motor precisa de Wine, Box64, bibliotecas ARM64, um root filesystem e uma camada gráfica compatível.",
             color = EngineMuted,
             fontSize = 13.sp
         )
 
         Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Winlator", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Motor integrado CloudyPlay", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    if (installedPackage != null) "Possível instalação encontrada."
-                    else "O motor ainda não foi detectado pelo CloudyPlay.",
-                    color = EngineMuted
+                    when (runtimeStatus.state) {
+                        WindowsRuntime.State.NOT_AVAILABLE -> "Estado: ainda não instalado no APK"
+                        WindowsRuntime.State.ASSETS_MISSING -> "Estado: arquivos do motor incompletos"
+                        WindowsRuntime.State.READY -> "Estado: arquivos do motor detectados (ainda requer teste de inicialização)"
+                    },
+                    color = EngineGreen,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(runtimeStatus.detail, color = EngineMuted, fontSize = 12.sp)
+                Text(
+                    "Este estado é verificado pelos arquivos locais. Não é considerado pronto só porque um jogo foi importado.",
+                    color = EngineMuted,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Winlator externo (temporário)", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (installedPackage != null) "Possível instalação encontrada: $installedPackage"
+                    else "Nenhum pacote Winlator conhecido foi encontrado.",
+                    color = EngineMuted,
+                    fontSize = 12.sp
                 )
                 Button(
                     onClick = {
@@ -64,19 +83,19 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
                         }
                         if (launchIntent != null) {
                             runCatching { context.startActivity(launchIntent) }
-                                .onSuccess { message = "Winlator aberto. Importe e configure os jogos dentro do próprio motor." }
+                                .onSuccess { message = "Winlator aberto. Esse caminho ainda é externo ao CloudyPlay." }
                                 .onFailure { message = "Não foi possível abrir o motor instalado." }
                         } else {
                             runCatching {
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/brunodev85/winlator/releases")))
                             }.onSuccess {
-                                message = "Abri a página oficial de versões. Instale apenas se confiar na origem e confira a compatibilidade do seu aparelho."
+                                message = "Página oficial aberta. A compatibilidade com a GPU Mali do M22 não é garantida."
                             }.onFailure { message = "Não foi possível abrir a página oficial." }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (installedPackage != null) "Abrir motor instalado" else "Ver página oficial do motor")
+                    Text(if (installedPackage != null) "Abrir motor externo" else "Ver projeto de referência")
                 }
                 Text(message, color = EngineGreen, fontSize = 12.sp)
             }
@@ -84,11 +103,11 @@ fun EngineIntegrationScreen(onBack: () -> Unit) {
 
         Card(colors = CardDefaults.cardColors(containerColor = EnginePanel)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Estado real da integração", color = EngineGreen, fontWeight = FontWeight.Bold)
-                Text("• O CloudyPlay ainda não contém Wine, Box64 ou bibliotecas gráficas embutidas.", color = EngineMuted, fontSize = 12.sp)
-                Text("• Este botão abre o aplicativo externo, se detectado; caso contrário, abre a página oficial.", color = EngineMuted, fontSize = 12.sp)
-                Text("• Ainda não transfere um .EXE do catálogo para o motor nem inicia jogos automaticamente.", color = EngineMuted, fontSize = 12.sp)
-                Text("• O Galaxy M22 usa GPU Mali; desempenho e compatibilidade gráfica precisam ser testados no aparelho.", color = EngineMuted, fontSize = 12.sp)
+                Text("Próximos bloqueios técnicos", color = EngineGreen, fontWeight = FontWeight.Bold)
+                Text("• Compilar/empacotar componentes nativos para arm64-v8a com licenças e avisos preservados.", color = EngineMuted, fontSize = 12.sp)
+                Text("• Preparar o root filesystem e a inicialização JNI do runtime.", color = EngineMuted, fontSize = 12.sp)
+                Text("• Validar a rota gráfica no Galaxy M22 com GPU Mali antes de prometer jogos 3D.", color = EngineMuted, fontSize = 12.sp)
+                Text("• Só então ligar o botão Executar da biblioteca ao motor e testar um executável simples.", color = EngineMuted, fontSize = 12.sp)
             }
         }
     }
