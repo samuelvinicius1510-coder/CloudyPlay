@@ -34,9 +34,9 @@ jobs:
           echo "Recursive submodule status:"
           git submodule status --recursive
           echo "Gradle entry points:"
-          find . -maxdepth 3 -name gradlew -print
-          find . -maxdepth 3 -name settings.gradle -print
-          find . -maxdepth 3 -name settings.gradle.kts -print
+          find . -maxdepth 4 -name gradlew -print
+          find . -maxdepth 4 -name settings.gradle -print
+          find . -maxdepth 4 -name settings.gradle.kts -print
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -61,12 +61,14 @@ jobs:
           cd winlator-upstream/app
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleDebug
+          echo "APK files produced by the build:"
+          find . -type f -path '*/build/outputs/apk/*/*.apk' -print
 
       - name: Upload upstream baseline APK (reference only)
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Winlator-upstream-reference-debug
-          path: winlator-upstream/app/build/outputs/apk/debug/*.apk
+          path: winlator-upstream/app/**/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 7
