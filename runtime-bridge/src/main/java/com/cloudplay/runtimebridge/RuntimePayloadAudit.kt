@@ -4,31 +4,26 @@ import android.content.Context
 import java.io.File
 
 /**
- * Audits only the runtime payload that CloudyPlay itself packages.
+ * Audits the payload CloudyPlay actually packages.
  * This does not download, extract, or execute third-party components.
  */
 object RuntimePayloadAudit {
     data class Report(
         val packagedAssets: List<String>,
         val missingAssets: List<String>,
-        val nativeLibraries: List<String>,
-        val missingNativeLibraries: List<String>
+        val packagedNativeLibraries: List<String>
     ) {
         val readyForBootstrap: Boolean
-            get() = missingAssets.isEmpty() && missingNativeLibraries.isEmpty()
+            get() = missingAssets.isEmpty() && packagedNativeLibraries.isNotEmpty()
     }
 
-    // Keep this list explicit so a partial payload cannot be mistaken for a complete runtime.
+    // Names follow the pinned Winlator upstream asset layout.
     private val requiredAssets = listOf(
         "winlator-runtime/rootfs.tzst",
         "winlator-runtime/rootfs_patches.tzst",
         "winlator-runtime/pulseaudio.tzst",
-        "winlator-runtime/container_pattern.tzst"
-    )
-
-    private val requiredLibraries = listOf(
-        "libbox64.so",
-        "libwinlator.so"
+        "winlator-runtime/container_pattern.tzst",
+        "winlator-runtime/box64/box64-0.4.4.tzst"
     )
 
     fun inspect(context: Context): Report {
@@ -36,15 +31,15 @@ object RuntimePayloadAudit {
             runCatching { context.assets.open(asset).use { true } }.getOrDefault(false)
         }
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
-        val foundLibraries = nativeDir.listFiles().orEmpty()
+        val nativeLibraries = nativeDir.listFiles().orEmpty()
+            .filter { it.isFile && it.extension.equals("so", ignoreCase = true) }
             .map { it.name }
-            .filter { name -> requiredLibraries.any { it.equals(name, ignoreCase = true) } }
+            .sorted()
 
         return Report(
             packagedAssets = foundAssets,
             missingAssets = requiredAssets - foundAssets.toSet(),
-            nativeLibraries = foundLibraries,
-            missingNativeLibraries = requiredLibraries - foundLibraries.toSet()
+            packagedNativeLibraries = nativeLibraries
         )
     }
 }
