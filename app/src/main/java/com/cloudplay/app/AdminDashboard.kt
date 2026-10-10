@@ -1,6 +1,7 @@
 package com.cloudplay.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardOptions
-import androidx.compose.ui.text.keyboardType
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONObject
@@ -74,7 +75,7 @@ private fun parseAdminError(body: String, code: Int): String = try {
 } catch (_: Exception) { "Erro HTTP $code. Confira a migração e as permissões do Supabase." }
 
 @Composable
-fun AdminDashboard(accessToken: String, userId: String, onSignOut: () -> Unit) {
+fun AdminDashboard(accessToken: String, userId: String, onBack: () -> Unit, onSignOut: () -> Unit) {
     var targetUser by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
@@ -106,7 +107,7 @@ fun AdminDashboard(accessToken: String, userId: String, onSignOut: () -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text("‹ Voltar ao CloudyPlay", color = Color(0xFF21E887), modifier = Modifier.clickableNoOp())
+        Text("‹ Voltar ao CloudyPlay", color = Color(0xFF21E887), modifier = Modifier.clickable(onClick = onBack))
         Text("Painel administrativo", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
         Text("Sessão autenticada • proprietário verificado", color = Color(0xFF21E887), fontSize = 12.sp)
         Text("ID da sua conta: $userId", color = Color(0xFFAAB6C5), fontSize = 11.sp)
@@ -178,4 +179,3 @@ private fun AdminSection(title: String, content: @Composable ColumnScope.() -> U
     }
 }
 
-private fun Modifier.clickableNoOp(): Modifier = this
