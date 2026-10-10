@@ -73,7 +73,7 @@ object RootFsArchiveValidator {
     }
 
     private fun normalize(path: String): String =
-        path.replace('\\\\', '/').removeSuffix("/")
+        path.replace("\\\\", "/").removeSuffix("/")
 
     private fun isSafeArchivePath(path: String): Boolean {
         if (path.isBlank() || path.startsWith("/") || path.startsWith("\\\\")) return false
