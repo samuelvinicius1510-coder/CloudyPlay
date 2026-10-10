@@ -103,6 +103,7 @@ fun LocalGameLibrary(onBack: () -> Unit) {
                 importing = true
                 message = "Copiando arquivo para o armazenamento privado do CloudyPlay…"
                 val result = withContext(Dispatchers.IO) {
+                    runCatching {
                     var partialFile: File? = null
                     try {
                         val name = context.contentResolver.query(
@@ -135,10 +136,8 @@ fun LocalGameLibrary(onBack: () -> Unit) {
                         partialFile?.delete()
                         throw error
                     }
-                }.fold(
-                    onSuccess = { Result.success(it) },
-                    onFailure = { Result.failure(it) }
-                )
+                    }
+                }
                 importing = false
                 result.onSuccess { (name, storedName, size) ->
                     val entry = "$name | $INTERNAL_PREFIX$storedName"
