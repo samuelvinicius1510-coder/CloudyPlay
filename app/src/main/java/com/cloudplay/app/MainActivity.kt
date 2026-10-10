@@ -15,6 +15,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -78,11 +83,16 @@ fun CloudPlayApp() {
                 showStores -> StoreIntegrationsScreen(onBack = { showStores = false })
                 showEngine -> EngineIntegrationScreen(onBack = { showEngine = false })
                 selectedGame != null -> SessionScreen(game = selectedGame!!, onBack = { selectedGame = null })
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                else -> {
+                    val homeListState = rememberLazyListState()
+                    val homeScope = rememberCoroutineScope()
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = homeListState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -160,6 +170,47 @@ fun CloudPlayApp() {
                     item {
                         Text("CloudyPlay v0.2 • A transmissão real será integrada numa próxima etapa.",
                             color = Muted, fontSize = 11.sp, modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                        }
+                        val visibleCount = homeListState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+                        val totalCount = homeListState.layoutInfo.totalItemsCount.coerceAtLeast(1)
+                        val thumbHeight = (maxHeight * visibleCount / totalCount).coerceIn(36.dp, maxHeight)
+                        val maxScrollIndex = (totalCount - visibleCount).coerceAtLeast(1)
+                        val thumbTravel = (maxHeight - thumbHeight).coerceAtLeast(0.dp)
+                        val thumbY = thumbTravel * (homeListState.firstVisibleItemIndex.toFloat() / maxScrollIndex).coerceIn(0f, 1f)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxHeight()
+                                .width(18.dp)
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            Box(
+                                Modifier.fillMaxHeight().width(3.dp)
+                                    .background(Color(0xFF263746), RoundedCornerShape(4.dp))
+                            )
+                            Box(
+                                Modifier
+                                    .offset(y = thumbY)
+                                    .width(8.dp)
+                                    .height(thumbHeight)
+                                    .background(Green, RoundedCornerShape(8.dp))
+                                    .pointerInput(totalCount, maxHeight) {
+                                        detectDragGestures { change, dragAmount ->
+                                            change.consume()
+                                            val trackPx = size.height.toFloat()
+                                            val thumbPx = thumbHeight.toPx()
+                                            val availablePx = (trackPx - thumbPx).coerceAtLeast(1f)
+                                            val currentFraction = (homeListState.firstVisibleItemIndex.toFloat() / maxScrollIndex).coerceIn(0f, 1f)
+                                            val nextFraction = (currentFraction + dragAmount.y / availablePx).coerceIn(0f, 1f)
+                                            homeScope.launch {
+                                                homeListState.scrollToItem((nextFraction * maxScrollIndex).toInt())
+                                            }
+                                        }
+                                    }
+                            )
+                        }
                     }
                 }
             }
