@@ -84,25 +84,32 @@ fun CloudPlayApp() {
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("☁", color = Green, fontSize = 34.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Column {
-                                Text("CloudyPlay", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                                Text("Jogue pela nuvem", color = Muted, fontSize = 13.sp)
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("☁", color = Green, fontSize = 34.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text("CloudyPlay", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+                                    Text("Jogue pela nuvem", color = Muted, fontSize = 13.sp)
+                                }
                             }
-                            Spacer(Modifier.weight(1f))
-                            TextButton(onClick = { showEngine = true }) {
-                                Text("Motor PC", color = Green, fontWeight = FontWeight.Bold)
-                            }
-                            TextButton(onClick = { showStores = true }) {
-                                Text("Lojas", color = Green, fontWeight = FontWeight.Bold)
-                            }
-                            TextButton(onClick = { showLibrary = true }) {
-                                Text("Biblioteca", color = Green, fontWeight = FontWeight.Bold)
-                            }
-                            TextButton(onClick = { showAdmin = true }) {
-                                Text("Admin", color = Green, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(onClick = { showEngine = true }, modifier = Modifier.weight(1f)) {
+                                    Text("Motor PC", color = Green, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                TextButton(onClick = { showStores = true }, modifier = Modifier.weight(1f)) {
+                                    Text("Lojas", color = Green, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                TextButton(onClick = { showLibrary = true }, modifier = Modifier.weight(1f)) {
+                                    Text("Biblioteca", color = Green, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                TextButton(onClick = { showAdmin = true }, modifier = Modifier.weight(1f)) {
+                                    Text("Admin", color = Green, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
                             }
                         }
                     }
